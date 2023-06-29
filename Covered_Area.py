@@ -118,7 +118,7 @@ class MainClass(object):
         self.root.mainloop()
 
     def reiniciar(self):
-        os.execl(sys.executable, sys.executable, *sys.argv)
+        os.execl(sys.executable, sys.executable, *sys.argv) #comando para reiniciar a aplicação
 
     def openImg(self):
         try:
