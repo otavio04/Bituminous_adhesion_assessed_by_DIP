@@ -13,7 +13,6 @@ import re
 
 class MainClass(object):
 
-
     def __init__(self):
 
         self.img_o = np.zeros((1, 1, 3), dtype='float32')
