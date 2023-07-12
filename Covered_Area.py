@@ -131,6 +131,7 @@ class MainClass(object):
             i = cv2.cvtColor(i, cv2.COLOR_BGR2RGB)
             self.img_o = i.copy()
 
+            self.lLocal.config(text="Arquio: "+str(self.root.filename))
             self.bProcessar.config(state="normal")
             self.bCalcular.config(state="disabled")
             self.bGravar.config(state="disabled")
