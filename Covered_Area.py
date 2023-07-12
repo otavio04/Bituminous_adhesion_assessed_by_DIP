@@ -350,7 +350,7 @@ class MainClass(object):
 
     def gravar(self):
         pasta_armazenar = str(self.ePasta.get()).strip()
-        if(len(pasta_armazenar) > 0 and not self.tem_caracter_especial(pasta_armazenar)):
+        if(len(pasta_armazenar) > 0): #removed  and not self.tem_caracter_especial(pasta_armazenar)
             self.ePasta.config(bg="#90ee90")
             img_or = cv2.cvtColor(self.img_o.copy(), cv2.COLOR_RGB2BGR)
             img_ma = cv2.cvtColor(self.img_find_mrc.copy(), cv2.COLOR_RGB2BGR)
@@ -370,7 +370,7 @@ class MainClass(object):
             data_hora_formatada = agora.strftime("%d-%m-%Y_%H-%M-%S")
             df = pd.DataFrame({'Id': self.id, 'Pixels Agregados': self.nAgreg, 'Pixels Ligante': self.nLigan, 'Pixels Brilho': self.nBrilh, 'Cobrimento': self.nCobrimento, 'Estatistica': self.estatistic, 'Legenda': legenda})
             
-            pasta2 = f"{self.pasta}/{pasta_armazenar}_{data_hora_formatada}"
+            pasta2 = f"{pasta_armazenar}/{data_hora_formatada}"
 
             if not (os.path.exists(pasta2)):
                 os.mkdir(pasta2)
@@ -402,6 +402,7 @@ class MainClass(object):
 
     def tem_caracter_especial(self, string):
         pattern = r'[^a-zA-Z0-9\s]'  # Padrão para verificar se há caracteres especiais
+        print(bool(re.search(pattern, string)))
         return bool(re.search(pattern, string))
 
 if __name__ == '__main__':
