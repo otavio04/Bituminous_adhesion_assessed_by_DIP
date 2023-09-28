@@ -194,7 +194,9 @@ class MainClass(object):
         i = cv2.cvtColor(i, cv2.COLOR_RGB2LAB)
         a = i[:, :, 1]
         th = cv2.threshold(a,127,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
-        c, h = cv2.findContours(th, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        kernel = np.ones((5,5),np.uint8)
+        i_close = cv2.morphologyEx(th, cv2.MORPH_CLOSE, kernel)
+        c, h = cv2.findContours(i_close, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         
         i_marcada = img.copy()
 
