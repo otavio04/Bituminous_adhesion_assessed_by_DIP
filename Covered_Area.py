@@ -196,7 +196,8 @@ class MainClass(object):
         th = cv2.threshold(a,127,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
         kernel = np.ones((5,5),np.uint8)
         i_close = cv2.morphologyEx(th, cv2.MORPH_CLOSE, kernel)
-        c, h = cv2.findContours(i_close, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        c_raw, h = cv2.findContours(i_close, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        c = self.filter_c(c_raw)
         
         i_marcada = img.copy()
 
@@ -320,6 +321,27 @@ class MainClass(object):
         self.bGravar.config(state="disable")
         self.showImg(i_o_l, self.lLigante)
         self.showImg(i_o_b, self.lBrilho)
+
+    def filter_c(self, contours_c):
+        
+        lenghts = []
+
+        for i in contours_c:
+            lenghts.append(len(i))
+
+        q1 = np.percentile(np.array(lenghts), 25)
+        q3 = np.percentile(np.array(lenghts), 75)
+        diff = q3-q1
+        factor = 1.5
+        threshold = q1-(factor*diff)
+        
+        c_copy = np.copy(contours_c)
+        for i, c in enumerate(contours_c):
+            if lenghts[i] < threshold or lenghts[i] == threshold:
+                c_copy[i] = None
+
+        c_filtered = [c for c in c_copy if c is not None]
+        return c_filtered
 
     def calcular(self):
         self.contar_pixel(self.list_contours, self.img_find_agr, 1)
