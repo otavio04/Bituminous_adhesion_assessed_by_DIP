@@ -122,7 +122,7 @@ class MainClass(object):
 
     def openImg(self):
         try:
-            self.root.filename = filedialog.askopenfilename(initialdir=self.absolute_path, title="Selecione um arquivo", filetypes=(("Todos", "*.*"), ("Arquivo jpg", "*.jpg"), ("Arquivo png", "*.png")))
+            self.root.filename = filedialog.askopenfilename(initialdir=self.absolute_path, title="Selecione um arquivo", filetypes=(("Arquivo jpg", "*.jpg"), ("Arquivo png", "*.png")))
         except:
             pass
 
@@ -130,6 +130,10 @@ class MainClass(object):
             i = cv2.imread(str(self.root.filename), cv2.IMREAD_UNCHANGED)
             i = cv2.cvtColor(i, cv2.COLOR_BGR2RGB)
             self.img_o = i.copy()
+
+            dir_path = os.path.dirname(str(self.root.filename))
+            self.ePasta.delete(0, END)
+            self.ePasta.insert(0, dir_path)
 
             self.lLocal.config(text="Arquio: "+str(self.root.filename))
             self.bProcessar.config(state="normal")
@@ -161,16 +165,27 @@ class MainClass(object):
         h_fAcao = self.fAcao.winfo_reqheight()
         h_fLim = self.fLimiares.winfo_reqheight()
 
-        if width_img >= height_img:
-            if(width_img >= w_r/4):
-                p = (w_r/4 - 30)/width_img
-            else:
-                p = 1.0
+        max_height = h_r - (h_fAcao + h_fLim) - 5
+        max_width = (w_r/4) - 5
+
+        scale_h = max_height/height_img
+        scale_w = max_width/width_img
+
+        if scale_w < scale_h:
+            p = scale_w
         else:
-            if(height_img >= h_r - (h_fAcao + h_fLim)):
-                p = (h_r - (h_fAcao + h_fLim) - 30)/height_img
-            else:
-                p = 1.0
+            p = scale_h
+
+        # if width_img >= height_img:
+        #     if(width_img >= w_r/4):
+        #         p = (w_r/4 - 30)/width_img
+        #     else:
+        #         p = 1.0
+        # else:
+        #     if(height_img >= h_r - (h_fAcao + h_fLim)):
+        #         p = (h_r - (h_fAcao + h_fLim) - 30)/height_img
+        #     else:
+        #         p = 1.0
 
         width_r = int(img.shape[1]*p)
         height_r = int(img.shape[0]*p)
