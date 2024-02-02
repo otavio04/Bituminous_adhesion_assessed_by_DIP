@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
-from scipy.special import gamma
 from scipy.stats import kstest
-from scipy.stats import weibull_min
+from scipy.stats import norm
+from scipy.stats import beta
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from tkinter import *
@@ -41,7 +41,6 @@ class MainClass(object):
         self.valor_limiar_lig = 0
         self.valor_limiar_bri = 0
 
-        self.pasta = 'C:/Covered_Area_results'
         fontsize_base = 12
         fonte1 = ("Perpetua", fontsize_base)
         fonte2 = ("Perpetua", fontsize_base-2)
@@ -50,43 +49,48 @@ class MainClass(object):
 
         self.list_contours = []
 
-        # self.absolute_path = os.path.dirname(__file__)
-        self.absolute_path = 'C:/Covered_Area_data/A12 - Maranhao/imagem_escolhida'
+        self.absolute_path = os.path.dirname(__file__)
+        # self.absolute_path = 'C:/Covered_Area_data/A12 - Maranhao/imagem_escolhida'
+
+        self.pasta = self.absolute_path
 
         self.root = Tk()
         self.root.title("Covered Area")
         self.root.state('zoomed')
         self.root.resizable(width=True, height=False)
 
-        self.fAcao = LabelFrame(self.root, text="Ações", font=fonte1)
-        self.fLimiares = LabelFrame(self.root, text="Controle de limiares", font=fonte1)
-        self.fGraphics = LabelFrame(self.root, text="Estatística", font=fonte1, width=500)
-        self.fImagens = LabelFrame(self.root, text="Exibição de imagens", font=fonte1)
+        self.fAcao = LabelFrame(self.root, text="Actions", font=fonte1)
+        self.fLimiares = LabelFrame(self.root, text="Threshold control", font=fonte1)
+        self.fGraphics = LabelFrame(self.root, text="Statistics", font=fonte1, width=500)
+        self.fImagens = LabelFrame(self.root, text="Show images", font=fonte1)
 
         self.fAcao.grid(row=0, column= 0, columnspan= 2, padx=5, sticky='WE')
         self.fLimiares.grid(row=1, column= 0, padx=5)
         self.fGraphics.grid(row=1, column= 1, padx=5, sticky='NS')
         self.fImagens.grid(row=2, column= 0, columnspan= 2, padx=5, sticky='WE')
 
-        self.lOriginal = Label(self.fImagens, text="Imagem original", font=fonte4)
-        self.lObjetos = Label(self.fImagens, text="Objetos detectados", font=fonte4)
-        self.lLigante = Label(self.fImagens, text="Realce do Ligante", font=fonte4)
-        self.lBrilho = Label(self.fImagens, text="Realce do Brilho do ligante", font=fonte4)
+        self.lProportion = Label(self.fGraphics, text="Beta proportion of aggregates with coverage greater than:\n20%: | 40%: | 50%: | 60%: | 80%: | 90%: ", font=fonte2)
+        self.lProportion.pack()
+
+        self.lOriginal = Label(self.fImagens, text="Original image", font=fonte4)
+        self.lObjetos = Label(self.fImagens, text="Detected objects", font=fonte4)
+        self.lLigante = Label(self.fImagens, text="Reslce of binder", font=fonte4)
+        self.lBrilho = Label(self.fImagens, text="Reslce of binder brightness", font=fonte4)
 
         self.lOriginal.grid(row=0, column= 0)
         self.lObjetos.grid(row=0, column= 1)
         self.lLigante.grid(row=0, column= 2)
         self.lBrilho.grid(row=0, column= 3)
         
-        self.bAbrir = Button(self.fAcao, text="Abrir imagem", font=fonte3, width= 10, cursor="hand2", command=self.openImg)
-        self.bReiniciar = Button(self.fAcao, text="Reiniciar", font=fonte3, fg="red", width= 10, cursor="hand2", command=self.reiniciar)
-        self.bProcessar = Button(self.fAcao, text="Processar", font=fonte3, width= 10, cursor="hand2", command=self.processar)
-        self.bCalcular = Button(self.fAcao, text="Calcular", font=fonte3, width= 10, cursor="hand2", command=self.calcular)
-        self.bGravar = Button(self.fAcao, text="Gravar", font=fonte3, width= 10, cursor="hand2", command=self.gravar)
-        self.lQuantidade = Label(self.fAcao, text="Partículas: 0", font=fonte3)
-        self.lCalculos = Label(self.fAcao, text="Quantidade de pixels\nAgregado: | Ligante: | Brilho: ", font=fonte2)
-        self.lLocal = Label(self.fAcao, text=f"Arquivos em: {self.pasta}", font=fonte2)
-        self.lPasta = Label(self.fAcao, text="Gravar na pasta:", font=fonte2)
+        self.bAbrir = Button(self.fAcao, text="Open image", font=fonte3, width= 10, cursor="hand2", command=self.openImg)
+        self.bReiniciar = Button(self.fAcao, text="Restart", font=fonte3, fg="red", width= 10, cursor="hand2", command=self.reiniciar)
+        self.bProcessar = Button(self.fAcao, text="Process", font=fonte3, width= 10, cursor="hand2", command=self.processar)
+        self.bCalcular = Button(self.fAcao, text="Calculate", font=fonte3, width= 10, cursor="hand2", command=self.calcular)
+        self.bGravar = Button(self.fAcao, text="Save", font=fonte3, width= 10, cursor="hand2", command=self.gravar)
+        self.lQuantidade = Label(self.fAcao, text="Particles: 0", font=fonte3)
+        self.lCalculos = Label(self.fAcao, text="Number of pixels\nAggregate: | Binder: | Brightness: ", font=fonte2)
+        self.lLocal = Label(self.fAcao, text=f"Files in: {self.pasta}", font=fonte2)
+        self.lPasta = Label(self.fAcao, text="Save to folder:", font=fonte2)
         self.ePasta = Entry(self.fAcao, width=30, font=fonte2)
 
         self.bReiniciar.grid(row=0, column= 0, rowspan= 2, padx= 5, pady= 5)
@@ -100,13 +104,13 @@ class MainClass(object):
         self.lPasta.grid(row=1, column= 7, padx= 5, pady= 5)
         self.ePasta.grid(row=1, column= 8, padx= 5, pady= 5, sticky='WE')
 
-        self.limiarTextL = Label(self.fLimiares, text="Limiar para identificar o ligante", font=fonte3)
-        self.limiarTextB = Label(self.fLimiares, text="Limiar para identificar o brilho ligante", font=fonte3)
-        self.limiarL = Scale(self.fLimiares, width= 20, length= 300, from_= 0, to= 255, font=fonte2, orient= HORIZONTAL, cursor="hand2", command=self.sliderL)
-        self.limiarB = Scale(self.fLimiares, width= 20, length= 300, from_= 0, to= 255, font=fonte2, orient= HORIZONTAL, cursor="hand2", command=self.sliderB)
+        self.limiarTextL = Label(self.fLimiares, text="Threshold to identify the binder", font=fonte3)
+        self.limiarTextB = Label(self.fLimiares, text="Threshold to identify the binder brightness", font=fonte3)
+        self.limiarL = Scale(self.fLimiares, width= 20, length= 400, from_= 0, to= 255, font=fonte2, orient= HORIZONTAL, cursor="hand2", command=self.sliderL)
+        self.limiarB = Scale(self.fLimiares, width= 20, length= 400, from_= 0, to= 255, font=fonte2, orient= HORIZONTAL, cursor="hand2", command=self.sliderB)
         self.cHist = Canvas(self.fLimiares, bg="black",width=256, height=256)
-        self.lLimiar = Label(self.fLimiares, text="Aplicar segmentação", font=fonte3)
-        self.bLimiar = Button(self.fLimiares, text="Limiares", font=fonte3, width= 10, cursor="hand2", command= lambda: self.aplicando_limiar(self.img_find_lig.copy(), self.img_find_bri.copy()))
+        self.lLimiar = Label(self.fLimiares, text="Apply segmentation", font=fonte3)
+        self.bLimiar = Button(self.fLimiares, text="Thresholds", font=fonte3, width= 10, cursor="hand2", command= lambda: self.aplicando_limiar(self.img_find_lig.copy(), self.img_find_bri.copy()))
         self.bOtsu = Button(self.fLimiares, text="Otsu", font=fonte3, width= 10, cursor="hand2", command= lambda: self.aplicando_otsu(self.img_find_lig.copy(), self.img_find_bri.copy()))
 
         self.cHist.grid(row= 0, column= 0, rowspan= 7)
@@ -117,7 +121,6 @@ class MainClass(object):
         self.lLimiar.grid(row= 4, column= 1, columnspan= 2)
         self.bLimiar.grid(row= 5, column= 1)
         self.bOtsu.grid(row= 5, column= 2)
-
 
         self.limiarB.set(255)
         self.bProcessar.config(state="disabled")
@@ -147,7 +150,7 @@ class MainClass(object):
 
     def openImg(self):
         try:
-            self.root.filename = filedialog.askopenfilename(initialdir=self.absolute_path, title="Selecione um arquivo", filetypes=(("Arquivo jpg", "*.jpg"), ("Arquivo png", "*.png")))
+            self.root.filename = filedialog.askopenfilename(initialdir=self.absolute_path, title="Select a file", filetypes=(("jpg files", "*.jpg"), ("png files", "*.png")))
         except:
             pass
 
@@ -160,7 +163,7 @@ class MainClass(object):
             self.ePasta.delete(0, END)
             self.ePasta.insert(0, dir_path)
 
-            self.lLocal.config(text="Arquio: "+str(self.root.filename))
+            self.lLocal.config(text="File: "+str(self.root.filename))
             self.bProcessar.config(state="normal")
             self.bCalcular.config(state="disabled")
             self.bGravar.config(state="disabled")
@@ -249,7 +252,7 @@ class MainClass(object):
         self.id = id_list
         self.img_find_mrc = i_marcada.copy()
         self.showImg(self.img_find_mrc, self.lObjetos)
-        self.lQuantidade.config(text= f"Partículas: {len(self.list_contours)}")
+        self.lQuantidade.config(text= f"Particles: {len(self.list_contours)}")
 
     def images_find(self, img, contours):
         imgL = img.copy()
@@ -393,7 +396,7 @@ class MainClass(object):
         statistic[3] = f"{self.valor_limiar_bri}"
         self.estatistic = statistic
 
-        self.lCalculos.config(text=f"Quantidade de pixels\nAgregado: {sum(self.nAgreg)} | Ligante: {sum(self.nLigan)} | Brilho: {sum(self.nBrilh)}")
+        self.lCalculos.config(text=f"Number of pixels\nAggregate: {sum(self.nAgreg)} | Binder: {sum(self.nLigan)} | Brightness: {sum(self.nBrilh)}")
     
         self.bGravar.config(state="normal")
         self.bCalcular.config(state="disable")
@@ -459,27 +462,27 @@ class MainClass(object):
 
 
     def dispersion(self, variable):
-        data = variable.copy()
+        data = np.asarray(variable.copy())/100
         size_array = len(data)
         x_axis = np.arange(1, size_array+1)
 
         data_mean = np.mean(data)
         data_std = np.std(data, ddof=1)
-        data_cv = 100 * data_std / data_mean
+        data_var = np.power(data_std, 2)
 
         font_normal = {'family': 'Times New Roman', 'size': 12}
         font_bold = {'family': 'Times New Roman', 'size': 12, 'weight': 'bold'}
         font_legend = {'family': 'Times New Roman', 'size': 10}
 
         #plotando dispersão
-        fig_dispersion, ax_d = plt.subplots(1, 2, figsize=(7, 2.5), dpi=100)
-        ax_d[0].scatter(x_axis, data, alpha=0.4, color='red', edgecolor='red', label=f'x̅={round(data_mean, 1)} | std={round(data_std, 1)}')
-        ax_d[0].set_title('Dispersão', fontdict=font_bold)
+        fig_dispersion, ax_d = plt.subplots(1, 2, figsize=(7, 2.2), dpi=100)
+        ax_d[0].scatter(x_axis, data, alpha=0.4, color='red', edgecolor='red', label=f'x̅={round(data_mean*100, 1)}% | std={round(data_std*100, 1)}%')
+        ax_d[0].set_title('Dispertion', fontdict=font_bold)
         ax_d[0].legend(prop=font_legend)
-        ax_d[0].set_xlabel('Partícula', fontdict=font_normal)
-        ax_d[0].set_ylabel('%Cobrimento', fontdict=font_normal)
+        ax_d[0].set_xlabel('Particle', fontdict=font_normal)
+        ax_d[0].set_ylabel('Coverage', fontdict=font_normal)
         ax_d[0].grid(False)
-        ax_d[0].set_ylim(0, 100)
+        ax_d[0].set_ylim(0, 1)
         ax_d[0].set_facecolor('#fff')
         ax_d[0].tick_params(axis='both', labelfontfamily='Times New Roman')
 
@@ -490,34 +493,53 @@ class MainClass(object):
 
         #plotando histograma
         ax_d[1].hist(data, bins=10, density=True, alpha=0.4, color='red', edgecolor='red')
-        ax_d[1].set_title('Histograma', fontdict=font_bold)
-        ax_d[1].set_xlabel('%Cobrimento', fontdict=font_normal)
-        ax_d[1].set_ylabel('Densidade de probabilidade', fontdict=font_normal)
+        ax_d[1].set_title('Histogram', fontdict=font_bold)
+        ax_d[1].set_xlabel('Coverage', fontdict=font_normal)
+        ax_d[1].set_ylabel('Probability density', fontdict=font_normal)
         ax_d[1].grid(False)
-        ax_d[1].set_xlim(0, 100)
+        ax_d[1].set_xlim(0, 1)
         ax_d[1].set_facecolor('#fff')
         ax_d[1].tick_params(axis='both', labelfontfamily='Times New Roman')
 
         fig_dispersion.set_facecolor('#0000') 
 
-        #plotando distribuição de weibull
-        weibull_shape = (data_std / data_mean)**(-1.086)
-        g = gamma(1+(1/weibull_shape))
-        weibull_scale = data_mean/g
+        #plotando distribuição normal
+        n_ks_e, n_ks_p = kstest(data, cdf='norm', args=(data_mean, data_std), N=size_array)
 
-        x_wei = np.linspace(0, 100, 1000)
-        curva_weibull_min = weibull_min.pdf(x_wei, weibull_shape, scale=weibull_scale)
-        ax_d[1].plot(x_wei, curva_weibull_min, color='red', label='Weibull_min')
+        x_norm = np.linspace(0, 1, 1000)
+        gaussian_distribution = norm.pdf(x_norm, data_mean, data_std)
+        ax_d[1].plot(x_norm, gaussian_distribution, color='#e74c3c', linestyle='-', linewidth=2,
+                     label=f'gaussian p-value: {round(n_ks_p, 2)}')
+
+        #plotando distribuição beta
+        b_alpha = data_mean * (((data_mean*(1 - data_mean)) / data_var) - 1)
+        b_beta = (1 - data_mean) * (((data_mean*(1 - data_mean)) / data_var) - 1)
+
+        b_ks_e, b_ks_p = kstest(data, cdf='beta', args=(b_alpha, b_beta), N=size_array)
+
+        x_beta = np.linspace(0, 1, 1000)
+        beta_distribution = beta.pdf(x_beta, b_alpha, b_beta)
+        ax_d[1].plot(x_beta, beta_distribution, color='#3498db', linestyle='-', linewidth=2,
+                     label=f'beta p-value: {round(b_ks_p, 2)}\n α:{round(b_alpha, 3)} \β:{round(b_beta, 3)}')
+
         ax_d[1].legend(prop=font_legend)
-
         plt.tight_layout()
+
+        #----proporção----
+        p20 = round(1 - beta.cdf(0.2, b_alpha, b_beta), 2)
+        p40 = round(1 - beta.cdf(0.4, b_alpha, b_beta), 2)
+        p50 = round(1 - beta.cdf(0.5, b_alpha, b_beta), 2)
+        p60 = round(1 - beta.cdf(0.6, b_alpha, b_beta), 2)
+        p80 = round(1 - beta.cdf(0.8, b_alpha, b_beta), 2)
+        p90 = round(1 - beta.cdf(0.9, b_alpha, b_beta), 2)
+
+        self.lProportion.config(text=f"Beta proportion of aggregates with coverage greater than:\n20%: {p20} | 40%: {p40} | 50%: {p50} | 60%: {p60} | 80%: {p80} | 90%: {p90}")
 
         canvas = FigureCanvasTkAgg(fig_dispersion, master=self.fGraphics)
         canvas_widget = canvas.get_tk_widget()
         canvas_widget.config(background='#f0f0f0')
         canvas_widget.pack()
 
-        # plt.show()
 
 if __name__ == '__main__':
     MainClass()
