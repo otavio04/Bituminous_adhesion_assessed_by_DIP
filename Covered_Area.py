@@ -1,5 +1,10 @@
 import cv2
 import numpy as np
+from scipy.special import gamma
+from scipy.stats import kstest
+from scipy.stats import weibull_min
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
@@ -37,44 +42,52 @@ class MainClass(object):
         self.valor_limiar_bri = 0
 
         self.pasta = 'C:/Covered_Area_results'
+        fontsize_base = 12
+        fonte1 = ("Perpetua", fontsize_base)
+        fonte2 = ("Perpetua", fontsize_base-2)
+        fonte3 = ("Perpetua", fontsize_base, "bold")
+        fonte4 = ("Perpetua", fontsize_base+4, "bold")
 
         self.list_contours = []
 
-        self.absolute_path = os.path.dirname(__file__)
+        # self.absolute_path = os.path.dirname(__file__)
+        self.absolute_path = 'C:/Covered_Area_data/A12 - Maranhao/imagem_escolhida'
 
         self.root = Tk()
         self.root.title("Covered Area")
         self.root.state('zoomed')
-        self.root.resizable(width=False, height=False)
+        self.root.resizable(width=True, height=False)
 
-        self.fAcao = LabelFrame(self.root, text="Ações")
-        self.fImagens = LabelFrame(self.root, text="Exibição de imagens")
-        self.fLimiares = LabelFrame(self.root, text="Controle de limiares")
+        self.fAcao = LabelFrame(self.root, text="Ações", font=fonte1)
+        self.fLimiares = LabelFrame(self.root, text="Controle de limiares", font=fonte1)
+        self.fGraphics = LabelFrame(self.root, text="Estatística", font=fonte1, width=500)
+        self.fImagens = LabelFrame(self.root, text="Exibição de imagens", font=fonte1)
 
-        self.fAcao.grid(row=0, column= 0)
-        self.fImagens.grid(row=1, column= 0)
-        self.fLimiares.grid(row=2, column= 0)
+        self.fAcao.grid(row=0, column= 0, columnspan= 2, padx=5, sticky='WE')
+        self.fLimiares.grid(row=1, column= 0, padx=5)
+        self.fGraphics.grid(row=1, column= 1, padx=5, sticky='NS')
+        self.fImagens.grid(row=2, column= 0, columnspan= 2, padx=5, sticky='WE')
 
-        self.lOriginal = Label(self.fImagens, text="Imagem original")
-        self.lObjetos = Label(self.fImagens, text="Objetos detectados")
-        self.lLigante = Label(self.fImagens, text="Imagem do Ligante")
-        self.lBrilho = Label(self.fImagens, text="Imagem do Brilho do ligante")
+        self.lOriginal = Label(self.fImagens, text="Imagem original", font=fonte4)
+        self.lObjetos = Label(self.fImagens, text="Objetos detectados", font=fonte4)
+        self.lLigante = Label(self.fImagens, text="Realce do Ligante", font=fonte4)
+        self.lBrilho = Label(self.fImagens, text="Realce do Brilho do ligante", font=fonte4)
 
         self.lOriginal.grid(row=0, column= 0)
         self.lObjetos.grid(row=0, column= 1)
         self.lLigante.grid(row=0, column= 2)
         self.lBrilho.grid(row=0, column= 3)
         
-        self.bAbrir = Button(self.fAcao, text="Abrir imagem", width= 10, cursor="hand2", command=self.openImg)
-        self.bReiniciar = Button(self.fAcao, text="Reiniciar", fg="red", width= 10, cursor="hand2", command=self.reiniciar)
-        self.bProcessar = Button(self.fAcao, text="Processar", width= 10, cursor="hand2", command=self.processar)
-        self.bCalcular = Button(self.fAcao, text="Calcular", width= 10, cursor="hand2", command=self.calcular)
-        self.bGravar = Button(self.fAcao, text="Gravar", width= 10, cursor="hand2", command=self.gravar)
-        self.lQuantidade = Label(self.fAcao, text="Partículas: 0")
-        self.lCalculos = Label(self.fAcao, text="Agregado | Ligante | Brilho | Área coberta média | Desv. Pad.:\n0 | 0 | 0 | 0% | 0%")
-        self.lLocal = Label(self.fAcao, text=f"Arquivos em: {self.pasta}")
-        self.lPasta = Label(self.fAcao, text="Gravar na pasta:")
-        self.ePasta = Entry(self.fAcao, width=30)
+        self.bAbrir = Button(self.fAcao, text="Abrir imagem", font=fonte3, width= 10, cursor="hand2", command=self.openImg)
+        self.bReiniciar = Button(self.fAcao, text="Reiniciar", font=fonte3, fg="red", width= 10, cursor="hand2", command=self.reiniciar)
+        self.bProcessar = Button(self.fAcao, text="Processar", font=fonte3, width= 10, cursor="hand2", command=self.processar)
+        self.bCalcular = Button(self.fAcao, text="Calcular", font=fonte3, width= 10, cursor="hand2", command=self.calcular)
+        self.bGravar = Button(self.fAcao, text="Gravar", font=fonte3, width= 10, cursor="hand2", command=self.gravar)
+        self.lQuantidade = Label(self.fAcao, text="Partículas: 0", font=fonte3)
+        self.lCalculos = Label(self.fAcao, text="Quantidade de pixels\nAgregado: | Ligante: | Brilho: ", font=fonte2)
+        self.lLocal = Label(self.fAcao, text=f"Arquivos em: {self.pasta}", font=fonte2)
+        self.lPasta = Label(self.fAcao, text="Gravar na pasta:", font=fonte2)
+        self.ePasta = Entry(self.fAcao, width=30, font=fonte2)
 
         self.bReiniciar.grid(row=0, column= 0, rowspan= 2, padx= 5, pady= 5)
         self.bAbrir.grid(row=0, column= 1, rowspan= 2, padx= 5, pady= 5)
@@ -85,16 +98,16 @@ class MainClass(object):
         self.lCalculos.grid(row=0, column= 6, rowspan= 2, padx= 5, pady= 5)
         self.lLocal.grid(row=0, column= 7, columnspan= 2, padx= 5, pady= 5)
         self.lPasta.grid(row=1, column= 7, padx= 5, pady= 5)
-        self.ePasta.grid(row=1, column= 8, padx= 5, pady= 5)
+        self.ePasta.grid(row=1, column= 8, padx= 5, pady= 5, sticky='WE')
 
-        self.limiarTextL = Label(self.fLimiares, text="Limiar para identificar o ligante")
-        self.limiarTextB = Label(self.fLimiares, text="Limiar para identificar o brilho ligante")
-        self.limiarL = Scale(self.fLimiares, width= 20, length= 300, from_= 0, to= 255, orient= HORIZONTAL, cursor="hand2", command=self.sliderL)
-        self.limiarB = Scale(self.fLimiares, width= 20, length= 300, from_= 0, to= 255, orient= HORIZONTAL, cursor="hand2", command=self.sliderB)
+        self.limiarTextL = Label(self.fLimiares, text="Limiar para identificar o ligante", font=fonte3)
+        self.limiarTextB = Label(self.fLimiares, text="Limiar para identificar o brilho ligante", font=fonte3)
+        self.limiarL = Scale(self.fLimiares, width= 20, length= 300, from_= 0, to= 255, font=fonte2, orient= HORIZONTAL, cursor="hand2", command=self.sliderL)
+        self.limiarB = Scale(self.fLimiares, width= 20, length= 300, from_= 0, to= 255, font=fonte2, orient= HORIZONTAL, cursor="hand2", command=self.sliderB)
         self.cHist = Canvas(self.fLimiares, bg="black",width=256, height=256)
-        self.lLimiar = Label(self.fLimiares, text="Aplicar segmentação")
-        self.bLimiar = Button(self.fLimiares, text="Limiares", width= 10, cursor="hand2", command= lambda: self.aplicando_limiar(self.img_find_lig.copy(), self.img_find_bri.copy()))
-        self.bOtsu = Button(self.fLimiares, text="Otsu", width= 10, cursor="hand2", command= lambda: self.aplicando_otsu(self.img_find_lig.copy(), self.img_find_bri.copy()))
+        self.lLimiar = Label(self.fLimiares, text="Aplicar segmentação", font=fonte3)
+        self.bLimiar = Button(self.fLimiares, text="Limiares", font=fonte3, width= 10, cursor="hand2", command= lambda: self.aplicando_limiar(self.img_find_lig.copy(), self.img_find_bri.copy()))
+        self.bOtsu = Button(self.fLimiares, text="Otsu", font=fonte3, width= 10, cursor="hand2", command= lambda: self.aplicando_otsu(self.img_find_lig.copy(), self.img_find_bri.copy()))
 
         self.cHist.grid(row= 0, column= 0, rowspan= 7)
         self.limiarTextL.grid(row= 0, column= 1, columnspan= 2)
@@ -114,8 +127,20 @@ class MainClass(object):
         self.bOtsu.config(state="disabled")
         self.limiarL.config(state="disabled")
         self.limiarB.config(state="disabled")
+
+        self.root.grid_columnconfigure(0, weight=1)
+        self.root.grid_columnconfigure(1, weight=1)
+
+        self.fImagens.grid_columnconfigure(0, weight=1)
+        self.fImagens.grid_columnconfigure(1, weight=1)
+        self.fImagens.grid_columnconfigure(2, weight=1)
+        self.fImagens.grid_columnconfigure(3, weight=1)
+
+        self.fAcao.grid_columnconfigure(6, weight=1)
+        self.fAcao.grid_columnconfigure(8, weight=1)
         
         self.root.mainloop()
+
 
     def reiniciar(self):
         os.execl(sys.executable, sys.executable, *sys.argv) #comando para reiniciar a aplicação
@@ -165,7 +190,7 @@ class MainClass(object):
         h_fAcao = self.fAcao.winfo_reqheight()
         h_fLim = self.fLimiares.winfo_reqheight()
 
-        max_height = h_r - (h_fAcao + h_fLim) - 5
+        max_height = h_r - (h_fAcao + h_fLim) - 27
         max_width = (w_r/4) - 5
 
         scale_h = max_height/height_img
@@ -175,17 +200,6 @@ class MainClass(object):
             p = scale_w
         else:
             p = scale_h
-
-        # if width_img >= height_img:
-        #     if(width_img >= w_r/4):
-        #         p = (w_r/4 - 30)/width_img
-        #     else:
-        #         p = 1.0
-        # else:
-        #     if(height_img >= h_r - (h_fAcao + h_fLim)):
-        #         p = (h_r - (h_fAcao + h_fLim) - 30)/height_img
-        #     else:
-        #         p = 1.0
 
         width_r = int(img.shape[1]*p)
         height_r = int(img.shape[0]*p)
@@ -265,7 +279,7 @@ class MainClass(object):
             v = (v/maxHist)*255
             v = 256 - v
             if(v <= 255):
-                self.cHist.create_line(i, 255, i, v, fill='red', width=1)
+                self.cHist.create_line(i, 255, i, v, fill='#ff0000', width=1)
 
     def sliderL(self, var):
         t = float(self.limiarL.get())
@@ -344,15 +358,12 @@ class MainClass(object):
         for i in contours_c:
             lenghts.append(len(i))
 
-        q1 = np.percentile(np.array(lenghts), 25)
-        q3 = np.percentile(np.array(lenghts), 75)
-        diff = q3-q1
-        factor = 1.5
-        threshold = q1-(factor*diff)
+        size1 = 0.1 * (np.amax(lenghts))
+        threshold = size1
         
         c_copy = np.copy(contours_c)
         for i, c in enumerate(contours_c):
-            if lenghts[i] < threshold or lenghts[i] == threshold:
+            if lenghts[i] < threshold:
                 c_copy[i] = None
 
         c_filtered = [c for c in c_copy if c is not None]
@@ -382,10 +393,12 @@ class MainClass(object):
         statistic[3] = f"{self.valor_limiar_bri}"
         self.estatistic = statistic
 
-        self.lCalculos.config(text=f"Agregado | Ligante | Brilho | Área coberta média | Desv. Pad.:\n{sum(self.nAgreg)} | {sum(self.nLigan)} | {sum(self.nBrilh)} | {round(media, 2)}% | {round(desv_pad, 2)}")
+        self.lCalculos.config(text=f"Quantidade de pixels\nAgregado: {sum(self.nAgreg)} | Ligante: {sum(self.nLigan)} | Brilho: {sum(self.nBrilh)}")
     
         self.bGravar.config(state="normal")
         self.bCalcular.config(state="disable")
+        
+        self.dispersion(self.nCobrimento)
 
     def gravar(self):
         pasta_armazenar = str(self.ePasta.get()).strip()
@@ -443,6 +456,68 @@ class MainClass(object):
         pattern = r'[^a-zA-Z0-9\s]'  # Padrão para verificar se há caracteres especiais
         print(bool(re.search(pattern, string)))
         return bool(re.search(pattern, string))
+
+
+    def dispersion(self, variable):
+        data = variable.copy()
+        size_array = len(data)
+        x_axis = np.arange(1, size_array+1)
+
+        data_mean = np.mean(data)
+        data_std = np.std(data, ddof=1)
+        data_cv = 100 * data_std / data_mean
+
+        font_normal = {'family': 'Times New Roman', 'size': 12}
+        font_bold = {'family': 'Times New Roman', 'size': 12, 'weight': 'bold'}
+        font_legend = {'family': 'Times New Roman', 'size': 10}
+
+        #plotando dispersão
+        fig_dispersion, ax_d = plt.subplots(1, 2, figsize=(7, 2.5), dpi=100)
+        ax_d[0].scatter(x_axis, data, alpha=0.4, color='red', edgecolor='red', label=f'x̅={round(data_mean, 1)} | std={round(data_std, 1)}')
+        ax_d[0].set_title('Dispersão', fontdict=font_bold)
+        ax_d[0].legend(prop=font_legend)
+        ax_d[0].set_xlabel('Partícula', fontdict=font_normal)
+        ax_d[0].set_ylabel('%Cobrimento', fontdict=font_normal)
+        ax_d[0].grid(False)
+        ax_d[0].set_ylim(0, 100)
+        ax_d[0].set_facecolor('#fff')
+        ax_d[0].tick_params(axis='both', labelfontfamily='Times New Roman')
+
+        #plotando média da dispersão
+        x_media = np.linspace(0, int(size_array), 1000)
+        y_media = np.ones_like(x_media) * data_mean
+        ax_d[0].plot(x_media, y_media, color='red')
+
+        #plotando histograma
+        ax_d[1].hist(data, bins=10, density=True, alpha=0.4, color='red', edgecolor='red')
+        ax_d[1].set_title('Histograma', fontdict=font_bold)
+        ax_d[1].set_xlabel('%Cobrimento', fontdict=font_normal)
+        ax_d[1].set_ylabel('Densidade de probabilidade', fontdict=font_normal)
+        ax_d[1].grid(False)
+        ax_d[1].set_xlim(0, 100)
+        ax_d[1].set_facecolor('#fff')
+        ax_d[1].tick_params(axis='both', labelfontfamily='Times New Roman')
+
+        fig_dispersion.set_facecolor('#0000') 
+
+        #plotando distribuição de weibull
+        weibull_shape = (data_std / data_mean)**(-1.086)
+        g = gamma(1+(1/weibull_shape))
+        weibull_scale = data_mean/g
+
+        x_wei = np.linspace(0, 100, 1000)
+        curva_weibull_min = weibull_min.pdf(x_wei, weibull_shape, scale=weibull_scale)
+        ax_d[1].plot(x_wei, curva_weibull_min, color='red', label='Weibull_min')
+        ax_d[1].legend(prop=font_legend)
+
+        plt.tight_layout()
+
+        canvas = FigureCanvasTkAgg(fig_dispersion, master=self.fGraphics)
+        canvas_widget = canvas.get_tk_widget()
+        canvas_widget.config(background='#f0f0f0')
+        canvas_widget.pack()
+
+        # plt.show()
 
 if __name__ == '__main__':
     MainClass()
