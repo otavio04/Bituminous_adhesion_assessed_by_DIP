@@ -69,7 +69,7 @@ class MainClass(object):
         self.fGraphics.grid(row=1, column= 1, padx=5, sticky='NS')
         self.fImagens.grid(row=2, column= 0, columnspan= 2, padx=5, sticky='WE')
 
-        self.lProportion = Label(self.fGraphics, text="Beta proportion of aggregates with coverage greater than:\n20%: | 40%: | 50%: | 60%: | 80%: | 90%: ", font=fonte2)
+        self.lProportion = Label(self.fGraphics, text="Beta proportion of aggregates with coated area greater than:\n20%: | 40%: | 50%: | 60%: | 80%: | 90%: ", font=fonte2)
         self.lProportion.pack()
 
         self.lOriginal = Label(self.fImagens, text="Original image", font=fonte4)
@@ -480,7 +480,7 @@ class MainClass(object):
         ax_d[0].set_title('Dispertion', fontdict=font_bold)
         ax_d[0].legend(prop=font_legend)
         ax_d[0].set_xlabel('Particle', fontdict=font_normal)
-        ax_d[0].set_ylabel('Coverage', fontdict=font_normal)
+        ax_d[0].set_ylabel('Coated', fontdict=font_normal)
         ax_d[0].grid(False)
         ax_d[0].set_ylim(0, 1)
         ax_d[0].set_facecolor('#fff')
@@ -494,7 +494,7 @@ class MainClass(object):
         #plotando histograma
         ax_d[1].hist(data, bins=10, density=True, alpha=0.4, color='red', edgecolor='red')
         ax_d[1].set_title('Histogram', fontdict=font_bold)
-        ax_d[1].set_xlabel('Coverage', fontdict=font_normal)
+        ax_d[1].set_xlabel('Coated', fontdict=font_normal)
         ax_d[1].set_ylabel('Probability density', fontdict=font_normal)
         ax_d[1].grid(False)
         ax_d[1].set_xlim(0, 1)
@@ -533,7 +533,7 @@ class MainClass(object):
         p80 = round(1 - beta.cdf(0.8, b_alpha, b_beta), 2)
         p90 = round(1 - beta.cdf(0.9, b_alpha, b_beta), 2)
 
-        self.lProportion.config(text=f"Beta proportion of aggregates with coverage greater than:\n20%: {p20} | 40%: {p40} | 50%: {p50} | 60%: {p60} | 80%: {p80} | 90%: {p90}")
+        self.lProportion.config(text=f"Beta proportion of aggregates with coated area greater than:\n20%: {p20} | 40%: {p40} | 50%: {p50} | 60%: {p60} | 80%: {p80} | 90%: {p90}")
 
         canvas = FigureCanvasTkAgg(fig_dispersion, master=self.fGraphics)
         canvas_widget = canvas.get_tk_widget()
