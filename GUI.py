@@ -52,6 +52,20 @@ class MainClass(object):
         self.absolute_path = os.path.dirname(__file__)
         # self.absolute_path = 'C:/Covered_Area_data/A12 - Maranhao/imagem_escolhida'
 
+        #images for cut
+        self.image_cv2 = np.zeros((1, 1, 3), dtype='float32')
+        self.image_cutted = [None] * 4
+        self.scroll_value_cum = 1.0
+        self.relative_y = 0.0
+        self.relative_x = 0.0
+        self.x_widget = 0
+        self.y_widget = 0
+
+        self.x0 = 0
+        self.x1 = 0
+        self.y0 = 0
+        self.y1 = 0
+
         self.pasta = self.absolute_path
 
         self.root = Tk()
@@ -81,6 +95,10 @@ class MainClass(object):
         self.lObjetos.grid(row=0, column= 1)
         self.lLigante.grid(row=0, column= 2)
         self.lBrilho.grid(row=0, column= 3)
+
+        self.lLigante.bind("<MouseWheel>", self.scroll)
+        self.lLigante.bind("<Button-1>", self.zoom_cut) #left button
+        self.lLigante.bind("<Button-3>", self.zoom_cut) #right button
         
         self.bAbrir = Button(self.fAcao, text="Open image", font=fonte3, width= 10, cursor="hand2", command=self.openImg)
         self.bReiniciar = Button(self.fAcao, text="Restart", font=fonte3, fg="red", width= 10, cursor="hand2", command=self.reiniciar)
@@ -150,13 +168,14 @@ class MainClass(object):
 
     def openImg(self):
         try:
-            self.root.filename = filedialog.askopenfilename(initialdir=self.absolute_path, title="Select a file", filetypes=(("jpg files", "*.jpg"), ("png files", "*.png")))
+            self.root.filename = filedialog.askopenfilename(initialdir=self.absolute_path, title="Select a file", filetypes=(("jpg files", "*.jpg"), ("jpeg files", "*.jpeg"), ("png files", "*.png")))
         except:
             pass
 
         if(len(str(self.root.filename)) > 0):
             i = cv2.imread(str(self.root.filename), cv2.IMREAD_UNCHANGED)
             i = cv2.cvtColor(i, cv2.COLOR_BGR2RGB)
+            self.image_cv2 = i.copy()
             self.img_o = i.copy()
 
             dir_path = os.path.dirname(str(self.root.filename))
@@ -540,6 +559,142 @@ class MainClass(object):
         canvas_widget.config(background='#f0f0f0')
         canvas_widget.pack()
 
+
+    def zoom_cut(self, event):
+        if self.lBrilho.cget("image") == "":
+            print("\a")
+        else:
+
+            if event.num == 1:
+                #Fração da imagem a ser cortada para zoom
+                self.scroll_value_cum = round(max(0.1, min(1.0, self.scroll_value_cum - 0.1)), 1)
+            elif event.num == 3:
+                #Fração da imagem a ser cortada para zoom
+                self.scroll_value_cum = round(max(0.1, min(1.0, self.scroll_value_cum + 0.1)), 1)
+
+            #posição do cursor
+            x_root, y_root = self.lLigante.winfo_pointerxy()
+            self.x_widget = self.lLigante.winfo_rootx()
+            self.y_widget = self.lLigante.winfo_rooty()
+            x = x_root - self.x_widget
+            y = y_root - self.y_widget
+
+            #tamanho do widget
+            widget_height = self.lLigante.winfo_height()
+            widget_width = self.lLigante.winfo_width()
+
+            #posição relativa do cursor
+            self.relative_y = y/widget_height
+            self.relative_x = x/widget_width
+            
+            self.cut_image()
+
+    def scroll(self, event):
+        if self.lBrilho.cget("image") == "":
+            print("\a")
+        else:
+            #Fração da imagem a ser cortada para zoom
+            self.scroll_value_cum = round(max(0.1, min(1.0, self.scroll_value_cum - event.delta / 1200.0)), 1)
+            # self.scroll_value_cum = 1 - (event.delta / 1200.0)
+
+            #posição do cursor
+            x_root, y_root = self.lLigante.winfo_pointerxy()
+            self.x_widget = self.lLigante.winfo_rootx()
+            self.y_widget = self.lLigante.winfo_rooty()
+            x = x_root - self.x_widget
+            y = y_root - self.y_widget
+
+            #tamanho do widget
+            widget_height = self.lLigante.winfo_height()
+            widget_width = self.lLigante.winfo_width()
+
+            #posição relativa do cursor
+            self.relative_y = y/widget_height
+            self.relative_x = x/widget_width
+            
+            self.cut_image()
+
+    def cut_image(self):
+        img_o_cut = self.image_cv2.copy()
+        h_original = np.shape(img_o_cut)[0]
+        w_original = np.shape(img_o_cut)[1]
+
+        h_cutted = int(h_original*self.scroll_value_cum)
+        w_cutted = int(w_original*self.scroll_value_cum)
+
+        center_y = int(self.relative_y * h_original)
+        center_x = int(self.relative_x * w_original)
+
+        x_0 = center_x - int(w_cutted/2) if center_x - int(w_cutted/2) >= 0.0 else 0
+        x_1 = w_cutted if x_0 == 0 else center_x + int(w_cutted/2)
+
+        if x_1 > w_original:
+            x_1 = w_original
+            x_0 = w_original - w_cutted
+
+        y_0 = center_y - int(h_cutted/2) if center_y - int(h_cutted/2) >= 0.0 else 0
+        y_1 = h_cutted if y_0 == 0 else center_y + int(h_cutted/2)
+
+        if y_1 > h_original:
+            y_1 = h_original
+            y_0 = h_original - h_cutted
+
+        self.x0 = x_0
+        self.x1 = x_1
+        self.y0 = y_0
+        self.y1 = y_1
+
+        self.image_cutted[0] = self.image_cv2.copy()[self.y0:self.y1, self.x0:self.x1]
+        self.image_cutted[1] = self.img_find_mrc.copy()[self.y0:self.y1, self.x0:self.x1]
+        self.image_cutted[2] = self.i_ligante.copy()[self.y0:self.y1, self.x0:self.x1]
+        self.image_cutted[3] = self.i_brilho.copy()[self.y0:self.y1, self.x0:self.x1]
+
+        self.update_image(self.image_cutted)
+
+    def update_image(self, img):
+        for i, im in enumerate(img):
+            if i == 0:
+                # Converter imagem OpenCV para formato Pillow
+                image_pil = Image.fromarray(im)
+                ratio = image_pil.width / image_pil.height
+                new_h = self.y_widget
+                new_w = int(self.y_widget * ratio)
+                image_pil = image_pil.resize((new_w, new_h))
+                # Converter para formato Tkinter
+                self.image_tk1 = ImageTk.PhotoImage(image_pil)
+                self.lOriginal.config(image=self.image_tk1)
+            elif i == 1:
+                # Converter imagem OpenCV para formato Pillow
+                image_pil = Image.fromarray(im)
+                ratio = image_pil.width / image_pil.height
+                new_h = self.y_widget
+                new_w = int(self.y_widget * ratio)
+                image_pil = image_pil.resize((new_w, new_h))
+                # Converter para formato Tkinter
+                self.image_tk2 = ImageTk.PhotoImage(image_pil)
+                self.lObjetos.config(image=self.image_tk2)
+            elif i == 2:
+                # Converter imagem OpenCV para formato Pillow
+                image_pil = Image.fromarray(im)
+                ratio = image_pil.width / image_pil.height
+                new_h = self.y_widget
+                new_w = int(self.y_widget * ratio)
+                image_pil = image_pil.resize((new_w, new_h))
+                # Converter para formato Tkinter
+                self.image_tk3 = ImageTk.PhotoImage(image_pil)
+                self.lLigante.config(image=self.image_tk3)
+            elif i == 3:
+                # Converter imagem OpenCV para formato Pillow
+                image_pil = Image.fromarray(im)
+                ratio = image_pil.width / image_pil.height
+                new_h = self.y_widget
+                new_w = int(self.y_widget * ratio)
+                image_pil = image_pil.resize((new_w, new_h))
+                # Converter para formato Tkinter
+                self.image_tk4 = ImageTk.PhotoImage(image_pil)
+                self.lBrilho.config(image=self.image_tk4)
+            
+            print(self.y_widget)
 
 if __name__ == '__main__':
     MainClass()
