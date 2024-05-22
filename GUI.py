@@ -8,13 +8,12 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageGrab
 import os
 import sys
 import pandas as pd
 import datetime
 import re
-
 
 class MainClass(object):
 
@@ -42,10 +41,11 @@ class MainClass(object):
         self.valor_limiar_bri = 0
 
         fontsize_base = 12
-        fonte1 = ("Perpetua", fontsize_base)
-        fonte2 = ("Perpetua", fontsize_base-2)
-        fonte3 = ("Perpetua", fontsize_base, "bold")
-        fonte4 = ("Perpetua", fontsize_base+4, "bold")
+        fonte_text = "Times New Roman"
+        fonte1 = (fonte_text, fontsize_base)
+        fonte2 = (fonte_text, fontsize_base-2)
+        fonte3 = (fonte_text, fontsize_base, "bold")
+        fonte4 = (fonte_text, fontsize_base+4, "bold")
 
         self.list_contours = []
 
@@ -71,7 +71,8 @@ class MainClass(object):
         self.root = Tk()
         self.root.title("Covered Area")
         self.root.state('zoomed')
-        self.root.resizable(width=True, height=False)
+        self.root.resizable(width=False, height=False)
+        self.root.iconbitmap("icone_ade.ico")
 
         self.fAcao = LabelFrame(self.root, text="Actions", font=fonte1)
         self.fLimiares = LabelFrame(self.root, text="Threshold control", font=fonte1)
@@ -414,13 +415,13 @@ class MainClass(object):
         statistic[2] = f"{self.valor_limiar_lig}"
         statistic[3] = f"{self.valor_limiar_bri}"
         self.estatistic = statistic
+        
+        self.dispersion(self.nCobrimento)
 
         self.lCalculos.config(text=f"Number of pixels\nAggregate: {sum(self.nAgreg)} | Binder: {sum(self.nLigan)} | Brightness: {sum(self.nBrilh)}")
     
         self.bGravar.config(state="normal")
         self.bCalcular.config(state="disable")
-        
-        self.dispersion(self.nCobrimento)
 
     def gravar(self):
         pasta_armazenar = str(self.ePasta.get()).strip()
@@ -435,21 +436,27 @@ class MainClass(object):
             for x in range(len(self.list_contours)):
                 legenda.append('')
             
-            legenda[0] = 'Media'
-            legenda[1] = 'Desv. Pad.'
-            legenda[2] = 'Limiar Ligante'
-            legenda[3] = 'Limiar Brilho do ligante'
+            legenda[0] = 'Average'
+            legenda[1] = 'Std'
+            legenda[2] = 'Binder threshold'
+            legenda[3] = 'Binder brightness threshold'
+            legenda[4] = 'Proportion of particles with coating greater than 20%'
+            legenda[5] = 'Proportion of particles with coating greater than 40%'
+            legenda[6] = 'Proportion of particles with coating greater than 50%'
+            legenda[7] = 'Proportion of particles with coating greater than 60%'
+            legenda[8] = 'Proportion of particles with coating greater than 80%'
+            legenda[9] = 'Proportion of particles with coating greater than 90%'
 
             agora = datetime.datetime.now()
             data_hora_formatada = agora.strftime("%d-%m-%Y_%H-%M-%S")
-            df = pd.DataFrame({'Id': self.id, 'Pixels Agregados': self.nAgreg, 'Pixels Ligante': self.nLigan, 'Pixels Brilho': self.nBrilh, 'Cobrimento': self.nCobrimento, 'Estatistica': self.estatistic, 'Legenda': legenda})
+            df = pd.DataFrame({'Id': self.id, 'Aggregate Pixels': self.nAgreg, 'Binder Pixels': self.nLigan, 'Brightness Pixels': self.nBrilh, 'Coating': self.nCobrimento, 'Statistical legend': legenda, 'Statistical': self.estatistic})
             
             pasta2 = f"{pasta_armazenar}/{data_hora_formatada}"
 
             if not (os.path.exists(pasta2)):
                 os.mkdir(pasta2)
             
-            df.to_csv(pasta2 + '/data_' + data_hora_formatada + '.csv', index=False)
+            df.to_csv(pasta2 + '/data_' + data_hora_formatada + '.csv', sep = ';', index=False)
 
             try:
                 cv2.imwrite(pasta2 + '/imageOriginal_' + data_hora_formatada + '.jpg', img_or)
@@ -552,7 +559,18 @@ class MainClass(object):
         p80 = round(1 - beta.cdf(0.8, b_alpha, b_beta), 2)
         p90 = round(1 - beta.cdf(0.9, b_alpha, b_beta), 2)
 
+        self.estatistic[4] = p20
+        self.estatistic[5] = p40
+        self.estatistic[6] = p50
+        self.estatistic[7] = p60
+        self.estatistic[8] = p80
+        self.estatistic[9] = p90
+
         self.lProportion.config(text=f"Beta proportion of aggregates with coated area greater than:\n20%: {p20} | 40%: {p40} | 50%: {p50} | 60%: {p60} | 80%: {p80} | 90%: {p90}")
+
+        # for widget in self.fGraphics.winfo_children():
+        #     print("tem")
+        #     widget.event_delete()
 
         canvas = FigureCanvasTkAgg(fig_dispersion, master=self.fGraphics)
         canvas_widget = canvas.get_tk_widget()
@@ -693,8 +711,7 @@ class MainClass(object):
                 # Converter para formato Tkinter
                 self.image_tk4 = ImageTk.PhotoImage(image_pil)
                 self.lBrilho.config(image=self.image_tk4)
-            
-            print(self.y_widget)
+
 
 if __name__ == '__main__':
     MainClass()
