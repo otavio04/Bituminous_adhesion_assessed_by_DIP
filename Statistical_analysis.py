@@ -168,7 +168,8 @@ for i in range(3):
       density=True,
       alpha=0.2,
       color='red',
-      label = f'x̅={round(sample_average[count], 2)}, s={round(sample_std[count], 2)}\nn={sample_n[count]}, n_min={n_min[count]}'
+      label = (f'x̅={round(sample_average[count], 2)}, s={round(sample_std[count], 2)}\n'
+               rf'n={sample_n[count]}, $n_{{\mathrm{{min}}}}$={n_min[count]}')
     )
     axs[i, j].set_title(f'Sample A{str(count+1).zfill(2)}: {sample_label[count]}', fontsize=8, fontweight='bold')
     axs[i, j].set_xlabel(f'Coated', fontsize=8)
