@@ -157,8 +157,7 @@ for i in range(len(dados)):
   weibull_ks.append((w_ks_e, w_ks_p))
 
 #=========Visualization=========
-#print(f"gaussian\tbeta\tgamma\tlognorm\tweibull")
-fig, axs = plt.subplots(3, 4, figsize=(16, 8))  # Largura: 4 polegadas, Altura: 4 polegadas
+fig, axs = plt.subplots(3, 4, figsize=(16, 8))
 count = 0
 for i in range(3):
   for j in range(4):
@@ -186,19 +185,19 @@ for i in range(3):
 
     #----plot beta----
     beta_distribution = beta.pdf(x, beta_alpha[count], beta_beta[count])
-    axs[i, j].plot(x, beta_distribution, color='#3498db', linestyle='-', linewidth=1, label=f'beta p-value: {round(beta_ks[count][1], 2)}')
+    axs[i, j].plot(x, beta_distribution, color='#f39c12', linestyle='-', linewidth=1, label=f'beta p-value: {round(beta_ks[count][1], 2)}')
 
     #----plot gamma----
     gamma_distribution = gamma.pdf(x, gamma_alpha[count], scale=gamma_beta[count])
-    axs[i, j].plot(x, gamma_distribution, color='#2ecc71', linestyle='-', linewidth=1, label=f'gamma p-value: {round(gamma_ks[count][1], 2)}')
+    axs[i, j].plot(x, gamma_distribution, color='#2ecc71', linestyle='--', linewidth=1, label=f'gamma p-value: {round(gamma_ks[count][1], 2)}')
     
     #----plot log-norm----
     lognorm_distribution = lognorm.pdf(x, lognorm_shape[count], loc=lognorm_loc[count], scale=lognorm_scale[count])
-    axs[i, j].plot(x, lognorm_distribution, color='#f39c12', linestyle='-', linewidth=1, label=f'log-norm p-value: {round(lognorm_ks[count][1], 2)}')
+    axs[i, j].plot(x, lognorm_distribution, color='#3498db', linestyle='-.', linewidth=1, label=f'log-norm p-value: {round(lognorm_ks[count][1], 2)}')
 
     #----plot weibull----
     weibull_min_distriution = weibull_min.pdf(x, weibull_shape[count], scale=weibull_scale[count])
-    axs[i, j].plot(x, weibull_min_distriution, color='#9b59b6', linestyle='-', linewidth=1, label=f'weibull_min p-value: {round(weibull_ks[count][1], 2)}')
+    axs[i, j].plot(x, weibull_min_distriution, color='#9b59b6', linestyle=':', linewidth=1, label=f'weibull_min p-value: {round(weibull_ks[count][1], 2)}')
 
     #print(f"{round(gaussian_ks[count][1], 3)}\t{round(beta_ks[count][1], 3)}\t{round(gamma_ks[count][1], 3)}\t{round(lognorm_ks[count][1], 3)}\t{round(weibull_ks[count][1], 3)}")
 
@@ -211,3 +210,58 @@ plt.tight_layout()
 
 # Exiba o gráfico
 plt.show()
+
+# #====Visualization for an especific sample=========
+# count = 0
+# for a in range(12):
+#   plt.hist(
+#     dados[count],
+#     bins=bins_dados[count],
+#     density=True,
+#     alpha=0.2,
+#     color='red',
+#     label = (f'x̅={round(sample_average[count], 2)}, s={round(sample_std[count], 2)}\n'
+#               rf'n={sample_n[count]}, $n_{{\mathrm{{min}}}}$={n_min[count]}')
+#   )
+#   plt.title(f'Sample A{str(count+1).zfill(2)}: {sample_label[count]}', fontsize=14, fontweight='bold')
+#   plt.xlabel(f'Coated', fontsize=14)
+#   plt.ylabel(f'Probability of densities (%)', fontsize=14)
+#   plt.grid(True)
+#   plt.xlim(0, 1)
+
+#   xmin, xmax = 0, 1
+#   x = np.linspace(xmin, xmax, 5000)
+
+#   #----plot gaussian----
+#   gaussian_distribution = norm.pdf(x, gaussian_mean[count], gaussian_std[count])
+#   plt.plot(x, gaussian_distribution, color='#e74c3c', linestyle='-', linewidth=3, label=f'gaussian p-value: {round(gaussian_ks[count][1], 2)}')
+
+#   #----plot beta----
+#   beta_distribution = beta.pdf(x, beta_alpha[count], beta_beta[count])
+#   plt.plot(x, beta_distribution, color='#f39c12', linestyle='-', linewidth=3, label=f'beta p-value: {round(beta_ks[count][1], 2)}')
+
+#   #----plot gamma----
+#   gamma_distribution = gamma.pdf(x, gamma_alpha[count], scale=gamma_beta[count])
+#   plt.plot(x, gamma_distribution, color='#3498db', linestyle='--', linewidth=3, label=f'gamma p-value: {round(gamma_ks[count][1], 2)}')
+
+#   #----plot log-norm----
+#   lognorm_distribution = lognorm.pdf(x, lognorm_shape[count], loc=lognorm_loc[count], scale=lognorm_scale[count])
+#   plt.plot(x, lognorm_distribution, color='#2ecc71', linestyle='-.', linewidth=3, label=f'log-norm p-value: {round(lognorm_ks[count][1], 2)}')
+
+#   #----plot weibull----
+#   weibull_min_distriution = weibull_min.pdf(x, weibull_shape[count], scale=weibull_scale[count])
+#   plt.plot(x, weibull_min_distriution, color='#9b59b6', linestyle=':', linewidth=3, label=f'weibull_min p-value: {round(weibull_ks[count][1], 2)}')
+
+#   #print(f"{round(gaussian_ks[count][1], 3)}\t{round(beta_ks[count][1], 3)}\t{round(gamma_ks[count][1], 3)}\t{round(lognorm_ks[count][1], 3)}\t{round(weibull_ks[count][1], 3)}")
+
+#   plt.legend(ncol=1, fontsize=14)
+
+#   # Ajuste o layout para evitar sobreposição
+#   plt.tight_layout()
+
+#   # Ajuste o tamanho da fonte dos números dos eixos
+#   plt.tick_params(axis='both', which='major', labelsize=14)
+
+#   # Exiba o gráfico
+#   plt.show()
+#   count += 1
