@@ -15,6 +15,7 @@ import pandas as pd
 import datetime
 import re
 import winsound
+import copy
 
 class MainClass(object):
 
@@ -40,6 +41,7 @@ class MainClass(object):
         self.estatistic = []
         self.valor_limiar_lig = 0
         self.valor_limiar_bri = 0
+        self.fig_dispertion_to_save = None
 
         fontsize_base = 12
         fonte_text = "Times New Roman"
@@ -74,9 +76,9 @@ class MainClass(object):
         self.root.state('zoomed')
         self.root.resizable(width=False, height=False)
 
-        relative_path = "icone_ade.ico"
-        path_icon = self.resource_path(relative_path)
-        self.root.iconbitmap(path_icon)
+        # relative_path = "icone_ade.ico"
+        # path_icon = self.resource_path(relative_path)
+        # self.root.iconbitmap(path_icon)
 
         self.fAcao = LabelFrame(self.root, text="Actions", font=fonte1)
         self.fLimiares = LabelFrame(self.root, text="Threshold control", font=fonte1)
@@ -475,6 +477,7 @@ class MainClass(object):
                 cv2.imwrite(pasta2 + '/imageMarcada_' + data_hora_formatada + '.jpg', img_ma)
                 cv2.imwrite(pasta2 + '/imageLigante_' + data_hora_formatada + '.jpg', img_li)
                 cv2.imwrite(pasta2 + '/imageBrilho_' + data_hora_formatada + '.jpg', img_br)
+                self.fig_dispertion_to_save.savefig(pasta2 + '/imageDispersion_' + data_hora_formatada + '.svg')
             except:
                 self.lCalculos.config(text="ERRO AO GRAVAR IMAGEM")
         else:
@@ -583,6 +586,8 @@ class MainClass(object):
         # for widget in self.fGraphics.winfo_children():
         #     print("tem")
         #     widget.event_delete()
+
+        self.fig_dispertion_to_save = copy.deepcopy(fig_dispersion)
 
         canvas = FigureCanvasTkAgg(fig_dispersion, master=self.fGraphics)
         canvas_widget = canvas.get_tk_widget()
